@@ -2,7 +2,8 @@ import {createClerkClient} from '@clerk/backend';
 const owners=env=>(env.OWNER_EMAILS||'').split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);
 export function entitlement(who,env,now=Date.now()){
  if(owners(env).includes(who.email?.toLowerCase())||env.AUTH_PROVIDER!=='clerk')return {plan:'owner',status:'active',owner:true,pro:true,access:true};
- const s=who.subscription||{},plan=['starter','pro'].includes(s.plan)?s.plan:null;
+ let overrides={};try{overrides=JSON.parse(env.SUBSCRIPTION_OVERRIDES||'{}');}catch{}
+ const s=overrides[who.email?.toLowerCase()]||who.subscription||{},plan=['starter','pro'].includes(s.plan)?s.plan:null;
  const end=s.status==='trialing'?s.trialEndsAt:s.paidThrough,expires=Date.parse(end||'');
  const access=!!plan&&['trialing','active'].includes(s.status)&&Number.isFinite(expires)&&expires>now;
  return {plan:plan||'unassigned',status:access?s.status:s.status==='trialing'?'trial_expired':s.status==='active'?'expired':'inactive',owner:false,pro:access&&plan==='pro',access,trialEndsAt:s.trialEndsAt||null,paidThrough:s.paidThrough||null,billingCycle:s.billingCycle||null};

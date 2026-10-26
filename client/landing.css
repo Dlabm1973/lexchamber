@@ -6,3 +6,5 @@
 .qaga-signature img,.qaga-footer-logo,.qaga-auth-logo{border:0;box-shadow:none}.pricing-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-width:900px;margin:auto}.qaga-slogan{font-size:12px;color:#65736b}.legal details{border-bottom:1px solid #dfe4da;padding:20px 0}.legal summary{cursor:pointer;font-weight:600}.legal p{font-size:13px;color:#65736b;max-width:900px}footer{flex-wrap:wrap}@media(max-width:750px){.pricing-grid{grid-template-columns:1fr}}
 
 .trial-box{display:flex;flex-direction:column;gap:6px;background:#e8efdf;border:1px solid #cddbbd;border-radius:5px;padding:15px 17px;margin:0 0 22px}.trial-box strong{font-size:15px;color:#244b3e}.trial-box span{font-size:10px;color:#65736b}.featured .trial-box{background:#244b3e;border-color:#244b3e}.featured .trial-box strong,.featured .trial-box span{color:#fff}
+
+.brand-copyright{display:inline!important;font-family:Arial,sans-serif!important;font-size:.35em!important;vertical-align:super;line-height:0;letter-spacing:0;margin-left:3px;font-weight:400}.brand{white-space:nowrap}.brand small{white-space:normal}
