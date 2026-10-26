@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test": "node --test --test-isolation=none tests/*.test.mjs"
+    "test": "node --test --test-isolation=none tests/*.test.mjs",
+    "dev": "node scripts/preview.mjs"
   },
   "dependencies": {
     "@clerk/backend": "^3.0.0"

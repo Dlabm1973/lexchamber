@@ -51,6 +51,6 @@ See [Clerk setup](docs/CLERK_SETUP.md), [backend setup](docs/SETUP.md), [working
 
 Public enquiries: info@lexchamber.co.za. Practice invoice emails: accounts@lexchamber.co.za.
 
-## Vercel
+## Portable GitHub source
 
-Vercel deployment support is included. See [the deployment guide](docs/VERCEL.md). Client assets are in client/ so all requests pass through authentication. Runtime keys and client-owned backend settings are not committed.
+Client assets are in `client/`. All requests pass through the Worker; Vercel support is retained in `api/index.js` and `vercel.json`. Runtime secrets and client backend identifiers are excluded. See [Vercel deployment](docs/VERCEL.md) and [the October update](docs/UPDATE_2026_10_26.md).

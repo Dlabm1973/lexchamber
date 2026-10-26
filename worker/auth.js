@@ -10,7 +10,7 @@ const state=await client.authenticateRequest(request,{authorizedParties:[new URL
 if(!state.isAuthenticated){const location=state.headers.get('location');if(location)return {redirect:location,responseHeaders:state.headers};return {responseHeaders:state.headers};}
 const auth=state.toAuth();if(!auth.userId)return {};
 const user=await client.users.getUser(auth.userId),primary=user.emailAddresses.find(e=>e.id===user.primaryEmailAddressId);
-return {responseHeaders:state.headers,backend:user.privateMetadata?.lexchamberBackend,subscription:user.privateMetadata?.lexchamberSubscription,userId:user.id,email:primary?.verification?.status==='verified'?primary.emailAddress:null};
+return {responseHeaders:state.headers,backend:user.privateMetadata?.lexchamberBackend,subscription:user.privateMetadata?.lexchamberSubscription,membership:user.privateMetadata?.lexchamberMembership,team:user.privateMetadata?.lexchamberTeam,userId:user.id,email:primary?.verification?.status==='verified'?primary.emailAddress:null};
 }
 
 export function withAuthCookies(response,authHeaders){if(!authHeaders)return response;const next=new Response(response.body,response);const cookies=authHeaders.getSetCookie?authHeaders.getSetCookie():[];for(const cookie of cookies)next.headers.append('Set-Cookie',cookie);return next;}
