@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {ACCOUNTS_EMAIL,emailDraft,deliveryMessage,whatsappNumber} from '../public/delivery.js';
+import {ACCOUNTS_EMAIL,emailDraft,deliveryMessage,whatsappNumber} from '../client/delivery.js';
 import worker from '../worker/index.js';
 const headers={'oai-authenticated-user-id':'owner','oai-authenticated-user-email':'owner@example.com',origin:'https://test.site','Content-Type':'application/json'};
 const env={ALLOWED_EMAILS:'owner@example.com',BREVO_API_KEY:'isolated-test-key'};

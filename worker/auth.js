@@ -10,5 +10,5 @@ const state=await client.authenticateRequest(request,{authorizedParties:[new URL
 if(!state.isAuthenticated){const location=state.headers.get('location');if(location)return {redirect:location};return {};}
 const auth=state.toAuth();if(!auth.userId)return {};
 const user=await client.users.getUser(auth.userId),primary=user.emailAddresses.find(e=>e.id===user.primaryEmailAddressId);
-return {userId:user.id,email:primary?.verification?.status==='verified'?primary.emailAddress:null};
+return {backend:user.privateMetadata?.lexchamberBackend,subscription:user.privateMetadata?.lexchamberSubscription,userId:user.id,email:primary?.verification?.status==='verified'?primary.emailAddress:null};
 }

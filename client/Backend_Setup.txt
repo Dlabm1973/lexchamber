@@ -52,16 +52,6 @@ else if(action==='migrateIds'){var preview=[];Object.keys(BASE_HEADERS).forEach(
 else fail_('Unsupported action.');steps.slice().forEach(function(st){if(st.tab!=='Transactions')return;var accountId=st.patch.accountId||(st.beforeRecord&&st.beforeRecord.accountId);if(!accountId)return;var a=find_('BankAccounts',accountId);if(!a)fail_('Bank account is missing.');var mirror=find_(a.sheetName,st.id),full=Object.assign({},st.beforeRecord||{},st.patch);steps.push(step_(a.sheetName,st.id,full,mirror));});return{steps:steps,recordId:id,before:strip_(before),after:after};}
 function readFile_(id){var doc=table_('Documents').filter(function(r){return r.fileId===id;})[0];if(!doc)fail_('This file is not registered to the practice.','AUTH');var f=DriveApp.getFileById(id);return{ok:true,base64:Utilities.base64Encode(f.getBlob().getBytes()),mimeType:f.getMimeType(),name:doc.name};}
 
-/** Run first in the copied spreadsheet. The secret stays in Script properties. */
-function setupWorkingCopy(){
-  var active=SpreadsheetApp.getActiveSpreadsheet();
-  if(!active||active.getId()!==PRACTICE_SHEET_ID)throw new Error('Open the Safe Working Copy and use Extensions > Apps Script there.');
-  var properties=PropertiesService.getScriptProperties();
-  var configured=properties.getProperty('SPREADSHEET_ID');
-  if(configured&&configured!==PRACTICE_SHEET_ID)throw new Error('SPREADSHEET_ID points elsewhere. Set it to the safe working-copy ID first.');
-  properties.setProperty('SPREADSHEET_ID',PRACTICE_SHEET_ID);
-  if(!properties.getProperty('SHARED_SECRET'))properties.setProperty('SHARED_SECRET',hash_([Utilities.getUuid(),Utilities.getUuid(),Utilities.getUuid(),Utilities.getUuid()]));
-  return 'Working-copy target configured. Secret stored privately in Script properties.';
-}
-
 function ensureBankSheet_(name){if(!/^Bank_[a-f0-9]{16}$/.test(name))fail_('Invalid account tab name.');var source=ss_(),sh=source.getSheetByName(name);if(sh)return;var backup=DriveApp.getFileById(source.getId()).makeCopy('Practice backup before bank account tab '+now_());PropertiesService.getScriptProperties().setProperty('LAST_BACKUP_ID',backup.getId());sh=source.insertSheet(name);var headers=BASE_HEADERS.Transactions.concat(EXTRA_HEADERS.Transactions);sh.getRange(1,1,1,headers.length).setValues([headers]);sh.setFrozenRows(1);SpreadsheetApp.flush();}
+
+function setupNewPractice(){var ss=ss_();Object.keys(BASE_HEADERS).forEach(function(name){if(!ss.getSheetByName(name)){var sh=ss.insertSheet(name);sh.getRange(1,1,1,BASE_HEADERS[name].length).setValues([BASE_HEADERS[name]]);}});initialisePractice();}

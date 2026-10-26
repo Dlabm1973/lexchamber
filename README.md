@@ -51,6 +51,6 @@ See [Clerk setup](docs/CLERK_SETUP.md), [backend setup](docs/SETUP.md), [working
 
 Public enquiries: info@lexchamber.co.za. Practice invoice emails: accounts@lexchamber.co.za.
 
-## Portable source export
+## Vercel
 
-Private spreadsheet IDs, banking defaults, hosted project identifiers and backend endpoints have been replaced by configuration placeholders. Configure your own hosting identity and practice backend before deployment. Runtime secrets are not included.
+Vercel deployment support is included. See [the deployment guide](docs/VERCEL.md). Client assets are in client/ so all requests pass through authentication. Runtime keys and client-owned backend settings are not committed.
