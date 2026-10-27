@@ -1,0 +1,17 @@
+# Background saving and faster reads
+
+Core invoice drafts/issues/amendments, payments, firms, matters and ordinary transactions now save through a device queue. A transaction is written to IndexedDB before the form closes and before it is labelled Save pending. The interface projects it locally while the spreadsheet remains authoritative. Final invoice numbers and PDFs are assigned/confirmed by the backend before an invoice can be sent.
+
+Pending state is scoped to verified account, backend connection and role. Backend credentials are not stored in the browser queue. The fast status call verifies current access before a saved snapshot is displayed. A practice fingerprint travels with writes to prevent an old tab from sending its pending data to another connected practice.
+
+Each mutation and its invoice PDF have fixed separate operation IDs. An uncertain request is retried with identical content; it is not recreated. One browser tab owns a renewable queue lease; other tabs may add work. Linked new firms/matters are resolved to backend IDs before dependent invoices are sent. A conflicting edit to the same record waits for the existing save/readback.
+
+Confirmed entries are reconciled against a fresh snapshot after a batch. Routine navigation stays available. Settings, corrections and bulk imports retain their existing confirmed workflows and wait for background core saves. Failed submissions remain visible. Network failures have bounded automatic retries and are retried on reconnection; validation/conflict failures require review and an explicit same-submission retry. No failed submission is silently treated as saved or discarded.
+
+The browser must remain open to process the queue. If it closes, IndexedDB retains pending items for the same account/practice on this device; processing resumes when reopened after the previous tab lease expires (up to two minutes). Browser data clearing, private browsing policies, or storage eviction can remove device-only work. If IndexedDB is unavailable, the app falls back to the previous confirmed-save workflow.
+
+The last confirmed snapshot is reused for quick reopening after access verification, while the backend refreshes. A 20-second bounded, practice-isolated Worker memory cache combines concurrent reads. Writes invalidate it before and after the backend call; manual Refresh forces a live read. It stores no durable server-side financial database. First reads without a cached snapshot and forced live reads still depend on Apps Script latency.
+
+Official fees reports and financial reports use the last confirmed data, not optimistic pending changes. The fees report/PDF records the source read time and warns when background work is awaiting sync/refresh. Invoices/statements cannot be shared while changes are pending. Clear this device’s cached figures in Settings removes the reusable snapshot, provided no pending work is present. It does not delete spreadsheet records.
+
+No Apps Script redeployment is required for the queue/cache release. The previously supplied optional script update can separately reduce spreadsheet service calls. No live practice records or real emails were used during verification. Tests cover durable enqueue, independent work during slow sends, dependency resolution, idempotent retries, PDF-stage recovery, cross-tab leases, readback reconciliation, cache invalidation and role/practice isolation.
