@@ -1,12 +1,14 @@
 import {createClerkClient} from '@clerk/backend';
+export const TRIAL_DAYS=7;
+export function trialDeadline(s){const start=Date.parse(s.trialStartedAt||''),end=Date.parse(s.trialEndsAt||'');return Number.isFinite(start)?new Date(Math.min(Number.isFinite(end)?end:Infinity,start+TRIAL_DAYS*86400000)).toISOString():s.trialEndsAt||null;}
 const owners=env=>(env.OWNER_EMAILS||'').split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);
 export function entitlement(who,env,now=Date.now()){
  if(owners(env).includes(who.email?.toLowerCase())||env.AUTH_PROVIDER!=='clerk')return {plan:'owner',status:'active',owner:true,pro:true,access:true};
  let overrides={};try{overrides=JSON.parse(env.SUBSCRIPTION_OVERRIDES||'{}');}catch{}
  const s=overrides[who.email?.toLowerCase()]||who.subscription||{},plan=['starter','pro'].includes(s.plan)?s.plan:null;
- const end=s.status==='trialing'?s.trialEndsAt:s.paidThrough,expires=Date.parse(end||'');
+ const end=s.status==='trialing'?trialDeadline(s):s.paidThrough,expires=Date.parse(end||'');
  const access=!!plan&&['trialing','active'].includes(s.status)&&Number.isFinite(expires)&&expires>now;
- return {plan:plan||'unassigned',status:access?s.status:s.status==='trialing'?'trial_expired':s.status==='active'?'expired':'inactive',owner:false,pro:access&&plan==='pro',access,trialEndsAt:s.trialEndsAt||null,paidThrough:s.paidThrough||null,billingCycle:s.billingCycle||null};
+ return {plan:plan||'unassigned',status:access?s.status:s.status==='trialing'?'trial_expired':s.status==='active'?'expired':'inactive',owner:false,pro:access&&plan==='pro',access,trialEndsAt:trialDeadline(s),paidThrough:s.paidThrough||null,billingCycle:s.billingCycle||null};
 }
 export function sanitiseInvoiceSnapshots(rows,privateKeys){return (rows||[]).map(row=>{if(!row.issuedSnapshot)return row;try{const snapshot=JSON.parse(row.issuedSnapshot);if(snapshot.settings){snapshot.settings={...snapshot.settings};for(const key of privateKeys)delete snapshot.settings[key];}return {...row,issuedSnapshot:JSON.stringify(snapshot)};}catch{return {...row,issuedSnapshot:''};}});}
 export function restrictData(result,tier){if(tier.pro||!result.data)return result;const data={...result.data};data.Invoices=sanitiseInvoiceSnapshots(data.Invoices,['financialPosition']);for(const key of ['Transactions','BankAccounts','BankStatements','Sheet5','Audit'])data[key]=[];data.Documents=(data.Documents||[]).filter(x=>x.kind==='invoice');data.settings={...data.settings};delete data.settings.financialPosition;data.accountingReady=false;return {...result,data};}
@@ -22,8 +24,8 @@ export async function manageSubscription(env,actor,input){
  if(owners(env).includes(input.email.trim().toLowerCase()))throw Error('Owner access is permanent and does not require a paid plan.');
  let trialEndsAt=old.trialEndsAt||null,paidThrough=old.paidThrough||null;
  if(input.status==='trialing'){
-  if(old.trialEndsAt&&Date.parse(old.trialEndsAt)<=now.getTime())throw Error('This account has already used its trial. Activate a paid plan instead.');
-  trialEndsAt=old.trialEndsAt||new Date(now.getTime()+30*86400000).toISOString();
+  if(trialDeadline(old)&&Date.parse(trialDeadline(old))<=now.getTime())throw Error('This account has already used its trial. Activate a paid plan instead.');
+  trialEndsAt=trialDeadline(old)||new Date(now.getTime()+TRIAL_DAYS*86400000).toISOString();
  }
  if(input.status==='active'){
   const end=Date.parse(input.paidThrough||'');if(!Number.isFinite(end)||end<=now.getTime())throw Error('Enter a future paid-through date after confirming payment.');paidThrough=new Date(end).toISOString();
@@ -33,4 +35,4 @@ export async function manageSubscription(env,actor,input){
  return {email:input.email,subscription:record};
 }
 
-export function onboardingSubscription(old,plan,billingCycle,now=new Date()){if(old?.trialEndsAt||old?.status==='active'||old?.status==='paused')return {...old,...(old.status==='trialing'?{plan,billingCycle}:{})};return {plan,billingCycle,status:'trialing',trialStartedAt:now.toISOString(),trialEndsAt:new Date(now.getTime()+30*86400000).toISOString()};}
+export function onboardingSubscription(old,plan,billingCycle,now=new Date()){if(old?.trialEndsAt||old?.status==='active'||old?.status==='paused')return {...old,...(old.status==='trialing'?{plan,billingCycle,trialEndsAt:trialDeadline(old)}:{})};return {plan,billingCycle,status:'trialing',trialStartedAt:now.toISOString(),trialEndsAt:new Date(now.getTime()+TRIAL_DAYS*86400000).toISOString()};}
