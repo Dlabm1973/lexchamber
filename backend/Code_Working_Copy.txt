@@ -2,12 +2,12 @@
  * All requests require an HMAC signed by the private Sites Worker.
  * Run initialisePractice once in the editor; it backs up before adding columns.
  */
-var PRACTICE_SHEET_ID='';
+var PRACTICE_SHEET_ID='YOUR_SPREADSHEET_ID';
 var BASE_HEADERS={Clients:['id','Firm','email','phone','Attorney','address','totalInvoiced','activeCases','createdAt','Partners'],Invoices:['id','clientId','clientName','matterName','amount','paidAmount','lastpaymentDate','status',' date','dueDate','lineItems','Partner ID','Partner Name','Partner Email'],Transactions:['id','date','description','amount','type','category'],Cases:['id','title','clientName','practiceArea','status','dateOpened','lastUpdated','description','notes']};
 var EXTRA_HEADERS={Clients:['archived','version'],Invoices:['matterId','reference','Partner Phone','subtotalCents','vatCents','vatRegistered','vatNumber','vatRate','vatTreatment','creditCents','pdfFileId','issuedSnapshot','issuedAt','cancelReason','version'],Transactions:['paymentId','reference','method','receiptFileId','reversed','isTest','version','accountId','statementId','fingerprint'],Cases:['clientId','archived','version']};
 var NEW_HEADERS={BankAccounts:['id','name','kind','lastFour','openingDate','openingBalance','sheetName','archived','version'],BankStatements:['id','accountId','fileId','name','sha256','uploadedAt','status','importedCount','version'],OperationParts:['id','operationId','index','data'],Payments:['id','invoiceId','clientId','date','amountCents','allocatedCents','creditCents','reference','method','transactionId','reversed','reversalReason','createdAt','version'],Audit:['id','date','actor','action','recordId','before','after','operationId'],Settings:['key','value'],Operations:['id','requestHash','plan','result','status','createdAt','actor'],Documents:['id','fileId','recordId','kind','name','sha256','createdAt','operationId'],CreditNotes:['id','invoiceId','clientId','date','amountCents','reason','version']};
 var REQUEST_SS=null;
-function ss_(){var id=PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');if(!id)throw new Error('Set SPREADSHEET_ID.');if(!REQUEST_SS)REQUEST_SS=SpreadsheetApp.openById(id);return REQUEST_SS;}
+function ss_(){var id=PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID')||PRACTICE_SHEET_ID;if(id!==PRACTICE_SHEET_ID)throw Error('This setup is restricted to the safe working copy. It cannot open your original spreadsheet.');if(!REQUEST_SS)REQUEST_SS=SpreadsheetApp.openById(id);return REQUEST_SS;}
 function fail_(message,code){var e=new Error(message);e.code=code||'VALIDATION';throw e;}
 function response_(obj){return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);}
 function hash_(v){return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,JSON.stringify(v),Utilities.Charset.UTF_8).map(function(b){return('0'+((b+256)%256).toString(16)).slice(-2);}).join('');}
@@ -60,4 +60,16 @@ else fail_('Unsupported action.');steps.slice().forEach(function(st){if(st.tab!=
 function readFile_(id){var doc=table_('Documents').filter(function(r){return r.fileId===id;})[0];if(!doc)fail_('This file is not registered to the practice.','AUTH');var f=DriveApp.getFileById(id);return{ok:true,base64:Utilities.base64Encode(f.getBlob().getBytes()),mimeType:f.getMimeType(),name:doc.name};}
 
 function ensureBankSheet_(name){if(!/^Bank_[a-f0-9]{16}$/.test(name))fail_('Invalid account tab name.');var source=ss_(),sh=source.getSheetByName(name);if(sh)return;var backup=DriveApp.getFileById(source.getId()).makeCopy('Practice backup before bank account tab '+now_());PropertiesService.getScriptProperties().setProperty('LAST_BACKUP_ID',backup.getId());sh=source.insertSheet(name);var headers=BASE_HEADERS.Transactions.concat(EXTRA_HEADERS.Transactions);sh.getRange(1,1,1,headers.length).setValues([headers]);sh.setFrozenRows(1);SpreadsheetApp.flush();}
+
+/** Run first in the copied spreadsheet. The secret stays in Script properties. */
+function setupWorkingCopy(){
+  var active=SpreadsheetApp.getActiveSpreadsheet();
+  if(!active||active.getId()!==PRACTICE_SHEET_ID)throw new Error('Open the Safe Working Copy and use Extensions > Apps Script there.');
+  var properties=PropertiesService.getScriptProperties();
+  var configured=properties.getProperty('SPREADSHEET_ID');
+  if(configured&&configured!==PRACTICE_SHEET_ID)throw new Error('SPREADSHEET_ID points elsewhere. Set it to the safe working-copy ID first.');
+  properties.setProperty('SPREADSHEET_ID',PRACTICE_SHEET_ID);
+  if(!properties.getProperty('SHARED_SECRET'))properties.setProperty('SHARED_SECRET',hash_([Utilities.getUuid(),Utilities.getUuid(),Utilities.getUuid(),Utilities.getUuid()]));
+  return 'Working-copy target configured. Secret stored privately in Script properties.';
+}
 

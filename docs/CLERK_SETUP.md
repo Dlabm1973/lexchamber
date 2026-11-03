@@ -1,6 +1,6 @@
 # LexChamber Clerk integration
 
-Selected existing application: YOUR_CLERK_APPLICATION_ID. No new Clerk application or test user was created.
+Selected existing application: app_3LEHXv9oavucUj0dHfvRINbjKPw. No new Clerk application or test user was created.
 
 The app is a JavaScript Cloudflare Worker, rather than Next.js. The Clerk CLI cannot detect this custom structure. The integration uses the official Clerk JavaScript browser SDK and @clerk/backend, bundled with esbuild.
 

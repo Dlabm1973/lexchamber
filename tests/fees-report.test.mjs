@@ -1,10 +1,10 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {writeFileSync} from 'node:fs';
-import {normalise,DEFAULT_SETTINGS} from '../client/domain.js';
-import {feesReport,feesReportNotes,validateReportRange} from '../client/fees-report.js';
-import {makeFeesReportPDF} from '../client/pdf.js';
-import {PDFDocument} from '../client/pdf-lib.js';
+import {normalise,DEFAULT_SETTINGS} from '../public/domain.js';
+import {feesReport,feesReportNotes,validateReportRange} from '../public/fees-report.js';
+import {makeFeesReportPDF} from '../public/pdf.js';
+import {PDFDocument} from '../public/pdf-lib.js';
 const invoice=(id,date,amount,paidAmount,status='UNPAID',extra={})=>({id,' date':date,amount,paidAmount,status,clientId:'C1',matterId:'M1',lineItems:'[]',...extra});
 const data=invoices=>normalise({Clients:[{id:'C1',Firm:'Example Attorneys',Partners:'[]'}],Cases:[{id:'M1',title:'Example matter'}],Invoices:invoices});
 test('fees register includes date boundaries, linked client/matter, allocated payments and credits; excludes drafts and opening balances',()=>{const d=data([invoice('1','2026-10-01','1000','400','PARTIAL'),invoice('2','2026-10-31','2000','500','PARTIAL',{creditCents:30000}),invoice('3','2026-09-30','9999','0'),invoice('4','2026-10-02','9999','0','DRAFT'),invoice('5','2026-10-02','9999','0','CANCELLED'),invoice('6','2026-10-02','9999','0','ISSUING'),invoice('7','2026-10-02','9999','0','UNPAID',{reference:'[OPENING] OLD-1'})]);d.payments=[{invoiceId:'1',amountCents:120000,allocatedCents:40000,creditCents:80000}];const r=feesReport(d,'2026-10-01','2026-10-31');assert.equal(r.rows.length,2);assert.deepEqual(r.totals,{fees:300000,payments:90000,outstanding:180000,credits:30000});assert.equal(r.rows[0].client,'Example Attorneys');assert.equal(r.rows[0].matter,'Example matter');assert.match(feesReportNotes(r)[0],/current recorded position/);});

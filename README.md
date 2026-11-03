@@ -50,7 +50,3 @@ Starter (R299/month), Professional (R599/month) and Practice Plus (R999/month) a
 See [Clerk setup](docs/CLERK_SETUP.md), [backend setup](docs/SETUP.md), [working-copy setup](docs/WORKING_COPY_SETUP.md), [bank statements](docs/BANK_STATEMENTS_SETUP.md), and [mapping](docs/MAPPING.md). Earlier dated verification notes describe the state at the time they were written.
 
 Public enquiries: info@lexchamber.co.za. Practice invoice emails: accounts@lexchamber.co.za.
-
-## Portable GitHub source
-
-Client assets are in `client/`. All requests pass through the Worker; Vercel support is retained in `api/index.js` and `vercel.json`. Runtime secrets and client backend identifiers are excluded. See [Vercel deployment](docs/VERCEL.md) and [the October update](docs/UPDATE_2026_10_26.md).

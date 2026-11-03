@@ -1,0 +1,25 @@
+import {stitchAPI} from './stitch.js';
+const bytes=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const base64=b=>btoa(String.fromCharCode(...new Uint8Array(b)));
+const context=new TextEncoder().encode('lexchamber/stitch-test-settings/v1');
+async function key(env,usage){return crypto.subtle.importKey('raw',bytes(env.STITCH_CONFIG_KEY),{name:'AES-GCM'},false,[usage]);}
+export async function sealSettings(env,values){const nonce=crypto.getRandomValues(new Uint8Array(12));const ciphertext=await crypto.subtle.encrypt({name:'AES-GCM',iv:nonce,additionalData:context},await key(env,'encrypt'),new TextEncoder().encode(JSON.stringify(values)));return JSON.stringify({version:1,nonce:base64(nonce),ciphertext:base64(ciphertext)});}
+export async function openSettings(env,envelope){const v=JSON.parse(envelope);if(v.version!==1)throw Error('Unknown encrypted settings version');const raw=await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes(v.nonce),additionalData:context},await key(env,'decrypt'),bytes(v.ciphertext));return JSON.parse(new TextDecoder().decode(raw));}
+export async function settingsEnvironment(env){if(!env.BILLING_DB||!env.STITCH_CONFIG_KEY)return env;try{const row=await env.BILLING_DB.prepare("SELECT envelope FROM stitch_settings WHERE id='test'").first();if(!row)return env;const v=await openSettings(env,row.envelope);return {...env,STITCH_CLIENT_ID:v.clientId,STITCH_CLIENT_SECRET:v.clientSecret,STITCH_WEBHOOK_SECRET:v.webhookSecret,STITCH_MODE:'test',STITCH_ENABLED:v.enabled?'true':'false'};}catch{return {...env,STITCH_ENABLED:'false',STITCH_SETTINGS_ERROR:true};}}
+export function settingsOwner(who,env){return env.AUTH_PROVIDER==='clerk'&&who.role!=='secretary'&&typeof who.userId==='string'&&!!who.email&&(env.OWNER_EMAILS||'').split(',').map(x=>x.trim().toLowerCase()).filter(Boolean).includes(who.email.toLowerCase());}
+export async function handleStitchSettings(request,env,who,transport=fetch){
+ const reply=(v,status=200)=>Response.json(v,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
+ if(!settingsOwner(who,env))return reply({ok:false,message:'Owner access is required.'},403);
+ if(!env.BILLING_DB||!env.STITCH_CONFIG_KEY)return reply({ok:false,message:'Encrypted payment configuration is awaiting server setup.'},503);
+ if(request.method==='GET'){const current=await settingsEnvironment(env);return reply({ok:true,mode:'test',enabled:current.STITCH_ENABLED==='true',configured:{clientId:!!current.STITCH_CLIENT_ID,clientSecret:!!current.STITCH_CLIENT_SECRET,webhookSecret:!!current.STITCH_WEBHOOK_SECRET},error:!!current.STITCH_SETTINGS_ERROR});}
+ if(request.method!=='POST')return reply({ok:false,message:'Method not allowed.'},405);
+ if(request.headers.get('origin')!==new URL(request.url).origin||!request.headers.get('content-type')?.startsWith('application/json'))return reply({ok:false,message:'Use the private setup form.'},403);
+ try{const raw=await request.text();if(raw.length>5000)return reply({ok:false,message:'Request too large.'},413);const input=JSON.parse(raw);const current=await settingsEnvironment(env);
+  if(input.action==='verify'){if(!current.STITCH_CLIENT_ID||!current.STITCH_CLIENT_SECRET)return reply({ok:false,message:'Save the test credentials first.'},400);await stitchAPI(current,'/api/v1/subscriptions?limit=1',{},transport);return reply({ok:true,message:'Stitch accepted the test credentials and recurring subscription permission. Webhook delivery still needs a separate test.'});}
+  if(current.STITCH_MODE==='live')return reply({ok:false,message:'Live payment configuration cannot be replaced through this test setup page.'},409);
+  const values={clientId:input.clientId||current.STITCH_CLIENT_ID,clientSecret:input.clientSecret||current.STITCH_CLIENT_SECRET,webhookSecret:input.webhookSecret||current.STITCH_WEBHOOK_SECRET,enabled:input.enabled===true};
+  if(typeof values.clientId!=='string'||!/^test-[a-zA-Z0-9-]{10,150}$/.test(values.clientId)||typeof values.clientSecret!=='string'||values.clientSecret.length<16||values.clientSecret.length>2000||typeof values.webhookSecret!=='string'||!/^whsec_[A-Za-z0-9+/=_-]{16,500}$/.test(values.webhookSecret))return reply({ok:false,message:'Enter the test Client ID, Client Secret and webhook Signing Secret. Blank fields retain saved values.'},400);
+  const envelope=await sealSettings(env,values);
+  await env.BILLING_DB.prepare("INSERT INTO stitch_settings(id,envelope,updated_at,updated_by) VALUES('test',?,?,?) ON CONFLICT(id) DO UPDATE SET envelope=excluded.envelope,updated_at=excluded.updated_at,updated_by=excluded.updated_by").bind(envelope,new Date().toISOString(),who.userId).run();return reply({ok:true,message:'Test credentials saved privately. '+(values.enabled?'Test checkout is enabled for approved testers.':'Test checkout remains disabled.')});
+ }catch{return reply({ok:false,message:'The request could not be confirmed. Check the saved status, or confirm the test credentials and recurring-payment permission with Stitch.'},502);}
+}

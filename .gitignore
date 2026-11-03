@@ -7,3 +7,6 @@ worker/assets.js
 !.env.example
 tests/*.pdf
 node_modules/
+
+public/ai-extract.js
+public/ai-pdf-worker.js

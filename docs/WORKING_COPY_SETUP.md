@@ -2,9 +2,9 @@
 
 Original Practice spreadsheet remains unchanged. The entire native spreadsheet was copied, preserving all five tabs. Metadata and sample records were read back from the copy.
 
-Working copy: https://docs.google.com/spreadsheets/
+Working copy: https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit
 
-Copy ID: `CLIENT_SPREADSHEET_ID`
+Copy ID: `YOUR_SPREADSHEET_ID`
 
 1. Open the working copy on a computer. Select **Extensions → Apps Script**.
 2. Replace the contents of `Code.gs` with the contents of `backend/Code_Working_Copy.txt`. Do not paste into the original spreadsheet’s script. If a copied Apps Script project contains other old `.gs` backend files with the same function names, replace the old backend rather than keeping both.

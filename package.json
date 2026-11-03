@@ -8,7 +8,9 @@
     "dev": "node scripts/preview.mjs"
   },
   "dependencies": {
-    "@clerk/backend": "^3.0.0"
+    "@clerk/backend": "^3.0.0",
+    "mammoth": "^1.13.0",
+    "pdfjs-dist": "^6.4.299"
   },
   "devDependencies": {
     "esbuild": "^0.27.0"

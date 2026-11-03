@@ -10,7 +10,7 @@ The app source and private Sites registration exist. Production publication is b
 
 | Property | Value |
 |---|---|
-| `SPREADSHEET_ID` | ID of the test copy; later the live ID `CLIENT_SPREADSHEET_ID` |
+| `SPREADSHEET_ID` | ID of the test copy; later the live ID `YOUR_SPREADSHEET_ID` |
 | `SHARED_SECRET` | A new secret generated locally, preferably 32 random bytes encoded as hex. Do not reuse any repository secret. |
 | `ALLOWED_EMAILS` | Comma-separated approved ChatGPT sign-in email addresses, including your own |
 
@@ -20,7 +20,7 @@ The app source and private Sites registration exist. Production publication is b
 
 ## 2. Configure the private Site
 
-The registered Site ID is `YOUR_SITES_PROJECT_ID`. Reuse it; do not create a replacement.
+The registered Site ID is `appgprj_6abe0d4b0a648191b32921ae57c05894`. Reuse it; do not create a replacement.
 
 Configure these private server environment variables through Sites:
 

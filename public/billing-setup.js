@@ -1,0 +1,8 @@
+import {loadAuth} from './clerk-client.js';
+const form=document.querySelector('#setup'),status=document.querySelector('#message'),verify=document.querySelector('#verify');
+async function load(){const r=await fetch('/api/billing/settings',{cache:'no-store'}),v=await r.json();if(!r.ok||!v.ok)throw Error(v.message||'Setup unavailable.');form.hidden=false;form.elements.enabled.checked=v.enabled;status.textContent=v.error?'Saved settings could not be decrypted. Re-enter all three values.':Object.entries(v.configured).map(([k,on])=>({clientId:'Client ID',clientSecret:'Client Secret',webhookSecret:'Signing Secret'}[k])+': '+(on?'saved':'not saved')).join('\n');}
+async function post(body){const r=await fetch('/api/billing/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}),v=await r.json();if(!r.ok||!v.ok)throw Error(v.message||'Request not confirmed.');return v;}
+function busy(value){form.querySelectorAll('button').forEach(b=>b.disabled=value);}
+form.addEventListener('submit',async e=>{e.preventDefault();busy(true);try{const v=await post({...Object.fromEntries(new FormData(form)),enabled:form.elements.enabled.checked});form.reset();await load();status.textContent=v.message+'\n'+status.textContent;}catch(e){status.textContent=e.message;}finally{busy(false);}});
+verify.addEventListener('click',async()=>{busy(true);try{status.textContent='Checking credentials and recurring-payment permission…';status.textContent=(await post({action:'verify'})).message;}catch(e){status.textContent=e.message;}finally{busy(false);}});
+try{await loadAuth();await load();}catch(e){status.textContent=e.message;}
